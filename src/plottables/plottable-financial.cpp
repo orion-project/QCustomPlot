@@ -868,7 +868,7 @@ double QCPFinancial::candlestickSelectTest(const QPointF &pos, const QCPFinancia
       // determine whether pos is in open-close-box:
       QCPRange boxKeyRange(it.value().key-mWidth*0.5, it.value().key+mWidth*0.5);
       QCPRange boxValueRange(it.value().close, it.value().open);
-      double posKey, posValue;
+      double posKey = 0, posValue = 0;
       pixelsToCoords(pos, posKey, posValue);
       if (boxKeyRange.contains(posKey) && boxValueRange.contains(posValue)) // is in open-close-box
       {
@@ -892,7 +892,7 @@ double QCPFinancial::candlestickSelectTest(const QPointF &pos, const QCPFinancia
       // determine whether pos is in open-close-box:
       QCPRange boxKeyRange(it.value().key-mWidth*0.5, it.value().key+mWidth*0.5);
       QCPRange boxValueRange(it.value().close, it.value().open);
-      double posKey, posValue;
+      double posKey = 0, posValue = 0;
       pixelsToCoords(pos, posKey, posValue);
       if (boxKeyRange.contains(posKey) && boxValueRange.contains(posValue)) // is in open-close-box
       {

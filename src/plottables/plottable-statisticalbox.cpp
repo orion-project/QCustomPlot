@@ -284,7 +284,7 @@ double QCPStatisticalBox::selectTest(const QPointF &pos, bool onlySelectable, QV
   
   if (mKeyAxis.data()->axisRect()->rect().contains(pos.toPoint()))
   {
-    double posKey, posValue;
+    double posKey = 0, posValue = 0;
     pixelsToCoords(pos, posKey, posValue);
     // quartile box:
     QCPRange keyRange(mKey-mWidth*0.5, mKey+mWidth*0.5);

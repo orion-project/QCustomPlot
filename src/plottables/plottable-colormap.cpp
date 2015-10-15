@@ -765,7 +765,7 @@ double QCPColorMap::selectTest(const QPointF &pos, bool onlySelectable, QVariant
   
   if (mKeyAxis.data()->axisRect()->rect().contains(pos.toPoint()))
   {
-    double posKey, posValue;
+    double posKey = 0, posValue = 0;
     pixelsToCoords(pos, posKey, posValue);
     if (mMapData->keyRange().contains(posKey) && mMapData->valueRange().contains(posValue))
       return mParentPlot->selectionTolerance()*0.99;
