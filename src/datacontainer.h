@@ -51,7 +51,7 @@ public:
   int size() const { return mData.size()-mPreallocSize; }
   bool isEmpty() const { return size() == 0; }
   bool autoSqueeze() const { return mAutoSqueeze; }
-  
+
   // setters:
   void setAutoSqueeze(bool enabled);
   
@@ -80,7 +80,8 @@ public:
   QCPRange valueRange(bool &foundRange, QCP::SignDomain signDomain=QCP::sdBoth, const QCPRange &inKeyRange=QCPRange());
   QCPDataRange dataRange() const { return QCPDataRange(0, size()); }
   void limitIteratorsToDataRange(const_iterator &begin, const_iterator &end, const QCPDataRange &dataRange) const;
-  
+
+  QVector<DataType>& rawData() { return mData; }
 protected:
   // property members:
   bool mAutoSqueeze;
