@@ -1153,8 +1153,13 @@ void QCPAxisRect::layoutChanged()
 */
 void QCPAxisRect::mousePressEvent(QMouseEvent *event, const QVariant &details)
 {
+#ifdef Q_OS_MAC
+    auto button = Qt::LeftButton;
+#else
+    auto button = Qt::MiddleButton;
+#endif
   Q_UNUSED(details)
-  if (event->buttons() & Qt::LeftButton)
+  if (event->buttons() & button)
   {
     mDragging = true;
     // initialize antialiasing backup in case we start dragging:
@@ -1187,7 +1192,7 @@ void QCPAxisRect::mouseMoveEvent(QMouseEvent *event, const QPointF &startPos)
 {
   Q_UNUSED(startPos)
   // Mouse range dragging interaction:
-  if (mDragging && mParentPlot->interactions().testFlag(QCP::iRangeDrag))
+  if (mDragging && mParentPlot->interactions().testFlag(QCP::iRangeDrag) && !mParentPlot->skipDragging)
   {
     
     if (mRangeDrag.testFlag(Qt::Horizontal))

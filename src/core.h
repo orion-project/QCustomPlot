@@ -196,7 +196,9 @@ public:
   
   QCPAxis *xAxis, *yAxis, *xAxis2, *yAxis2;
   QCPLegend *legend;
-  
+
+  bool skipDragging = false;
+
 signals:
   void mouseDoubleClick(QMouseEvent *event);
   void mousePress(QMouseEvent *event);
