@@ -1919,10 +1919,12 @@ void QCustomPlot::replot(QCustomPlot::RefreshPriority refreshPriority)
   foreach (QSharedPointer<QCPAbstractPaintBuffer> buffer, mPaintBuffers)
     buffer->setInvalidated(false);
   
+  if (!_skipUpdateOnReplot) {
   if ((refreshPriority == rpRefreshHint && mPlottingHints.testFlag(QCP::phImmediateRefresh)) || refreshPriority==rpImmediateRefresh)
     repaint();
   else
     update();
+  }
   
 # if QT_VERSION < QT_VERSION_CHECK(4, 8, 0)
   mReplotTime = replotTimer.elapsed();
@@ -2279,7 +2281,10 @@ void QCustomPlot::resizeEvent(QResizeEvent *event)
   Q_UNUSED(event)
   // resize and repaint the buffer:
   setViewport(rect());
+  if (skipRepaintOnResize)
+    _skipUpdateOnReplot = true;
   replot(rpQueuedRefresh); // queued refresh is important here, to prevent painting issues in some contexts (e.g. MDI subwindow)
+  _skipUpdateOnReplot = false;
 }
 
 /*! \internal

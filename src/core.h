@@ -198,6 +198,7 @@ public:
   QCPLegend *legend;
 
   bool skipDragging = false;
+  bool skipRepaintOnResize = false;
 
 signals:
   void mouseDoubleClick(QMouseEvent *event);
@@ -266,6 +267,8 @@ protected:
   QSharedPointer<QOpenGLPaintDevice> mGlPaintDevice;
 #endif
   
+  bool _skipUpdateOnReplot = false;
+
   // reimplemented virtual methods:
   virtual QSize minimumSizeHint() const Q_DECL_OVERRIDE;
   virtual QSize sizeHint() const Q_DECL_OVERRIDE;
