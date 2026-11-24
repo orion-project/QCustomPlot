@@ -150,8 +150,10 @@ protected:
   bool mTightBoundary;
   QPointer<QCPColorScale> mColorScale;
   
-  bool _ignoreAxisReverse = false;
+  bool _ignoreAxisReverseX = false;
+  bool _ignoreAxisReverseY = false;
   bool _renderConcurrent = false;
+  bool _invertScanlineIndex = true;
 
   // non-property members:
   QImage mMapImage, mUndersampledMapImage;

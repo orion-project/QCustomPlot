@@ -1042,7 +1042,10 @@ void QCPColorMap::updateMapImage()
         QVector<int> lines(lineCount);
         std::iota(lines.begin(), lines.end(), 0);
         QtConcurrent::blockingMap(lines, [&](int line){
-          QRgb* pixels = reinterpret_cast<QRgb*>(localMapImage->scanLine(lineCount-1-line)); // invert scanline index because QImage counts scanlines from top, but our vertical index counts from bottom (mathematical coordinate system)
+          const int scanLine = _invertScanlineIndex
+            ? (lineCount-1-line) // invert scanline index because QImage counts scanlines from top, but our vertical index counts from bottom (mathematical coordinate system)
+            : line; // when data provided already in QImage's order (use in combination with _ignoreAxisReverseY)
+          QRgb* pixels = reinterpret_cast<QRgb*>(localMapImage->scanLine(scanLine));
           if (rawAlpha)
             mGradient.colorize(rawData+line*rowCount, rawAlpha+line*rowCount, mDataRange, pixels, rowCount, 1, mDataScaleType==QCPAxis::stLogarithmic);
           else
@@ -1053,7 +1056,10 @@ void QCPColorMap::updateMapImage()
     #endif
       for (int line=0; line<lineCount; ++line)
       {
-        QRgb* pixels = reinterpret_cast<QRgb*>(localMapImage->scanLine(lineCount-1-line)); // invert scanline index because QImage counts scanlines from top, but our vertical index counts from bottom (mathematical coordinate system)
+        const int scanLine = _invertScanlineIndex
+          ? (lineCount-1-line) // invert scanline index because QImage counts scanlines from top, but our vertical index counts from bottom (mathematical coordinate system)
+          : line; // when data provided already in QImage's order (use in combination with _ignoreAxisReverseY)
+        QRgb* pixels = reinterpret_cast<QRgb*>(localMapImage->scanLine(scanLine));
         if (rawAlpha)
           mGradient.colorize(rawData+line*rowCount, rawAlpha+line*rowCount, mDataRange, pixels, rowCount, 1, mDataScaleType==QCPAxis::stLogarithmic);
         else
@@ -1069,7 +1075,10 @@ void QCPColorMap::updateMapImage()
         QVector<int> lines(lineCount);
         std::iota(lines.begin(), lines.end(), 0);
         QtConcurrent::blockingMap(lines, [&](int line){
-          QRgb* pixels = reinterpret_cast<QRgb*>(localMapImage->scanLine(lineCount-1-line)); // invert scanline index because QImage counts scanlines from top, but our vertical index counts from bottom (mathematical coordinate system)
+          const int scanLine = _invertScanlineIndex
+            ? (lineCount-1-line) // invert scanline index because QImage counts scanlines from top, but our vertical index counts from bottom (mathematical coordinate system)
+            : line; // when data provided already in QImage's order (use in combination with _ignoreAxisReverseY)
+          QRgb* pixels = reinterpret_cast<QRgb*>(localMapImage->scanLine(scanLine));
           if (rawAlpha)
             mGradient.colorize(rawData+line, rawAlpha+line, mDataRange, pixels, rowCount, lineCount, mDataScaleType==QCPAxis::stLogarithmic);
           else
@@ -1080,7 +1089,10 @@ void QCPColorMap::updateMapImage()
     #endif
       for (int line=0; line<lineCount; ++line)
       {
-        QRgb* pixels = reinterpret_cast<QRgb*>(localMapImage->scanLine(lineCount-1-line)); // invert scanline index because QImage counts scanlines from top, but our vertical index counts from bottom (mathematical coordinate system)
+        const int scanLine = _invertScanlineIndex
+          ? (lineCount-1-line) // invert scanline index because QImage counts scanlines from top, but our vertical index counts from bottom (mathematical coordinate system)
+          : line; // when data provided already in QImage's order (use in combination with _ignoreAxisReverseY)
+        QRgb* pixels = reinterpret_cast<QRgb*>(localMapImage->scanLine(scanLine));
         if (rawAlpha)
           mGradient.colorize(rawData+line, rawAlpha+line, mDataRange, pixels, rowCount, lineCount, mDataScaleType==QCPAxis::stLogarithmic);
         else
@@ -1167,8 +1179,8 @@ void QCPColorMap::draw(QCPPainter *painter)
       halfCellWidth = 0.5*imageRect.width()/double(mMapData->valueSize()-1);
   }
   imageRect.adjust(-halfCellWidth, -halfCellHeight, halfCellWidth, halfCellHeight);
-  const bool mirrorX = !_ignoreAxisReverse && (keyAxis()->orientation() == Qt::Horizontal ? keyAxis() : valueAxis())->rangeReversed();
-  const bool mirrorY = !_ignoreAxisReverse && (valueAxis()->orientation() == Qt::Vertical ? valueAxis() : keyAxis())->rangeReversed();
+  const bool mirrorX = !_ignoreAxisReverseX && (keyAxis()->orientation() == Qt::Horizontal ? keyAxis() : valueAxis())->rangeReversed();
+  const bool mirrorY = !_ignoreAxisReverseY && (valueAxis()->orientation() == Qt::Vertical ? valueAxis() : keyAxis())->rangeReversed();
   const bool smoothBackup = localPainter->renderHints().testFlag(QPainter::SmoothPixmapTransform);
   localPainter->setRenderHint(QPainter::SmoothPixmapTransform, mInterpolate);
   QRegion clipBackup;
