@@ -3,6 +3,9 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+OPTION(QCPL_COLORMAP_CONCURRENT "Use QtConcurrent when preparing QCPColorMap" OFF)
+OPTION(QCPL_COLORMAP_PERFLOG_ID "Report rendering time in QCPColorMap" OFF)
+
 add_library(qcustomplot STATIC
     src/colorgradient.h src/colorgradient.cpp
     src/core.h src/core.cpp
@@ -64,6 +67,15 @@ target_link_libraries(qcustomplot PRIVATE
     Qt::Widgets
     Qt::PrintSupport
 )
+
+if (QCPL_COLORMAP_CONCURRENT)
+    target_link_libraries(qcustomplot PRIVATE Qt::Concurrent)
+    target_compile_definitions(qcustomplot PRIVATE QCPL_COLORMAP_CONCURRENT)
+endif()
+
+if (QCPL_COLORMAP_PERFLOG_ID)
+    target_compile_definitions(qcustomplot PRIVATE QCPL_COLORMAP_PERFLOG_ID=${QCPL_COLORMAP_PERFLOG_ID})
+endif()
 
 target_include_directories(qcustomplot PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src

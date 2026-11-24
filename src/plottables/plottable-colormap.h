@@ -150,6 +150,9 @@ protected:
   bool mTightBoundary;
   QPointer<QCPColorScale> mColorScale;
   
+  bool _ignoreAxisReverse = false;
+  bool _renderConcurrent = false;
+
   // non-property members:
   QImage mMapImage, mUndersampledMapImage;
   QPixmap mLegendIcon;

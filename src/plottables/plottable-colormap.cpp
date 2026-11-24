@@ -29,6 +29,10 @@
 #include "../core.h"
 #include "../axis/axis.h"
 
+#ifdef QCPL_COLORMAP_CONCURRENT
+#include <QtConcurrent>
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////// QCPColorMapData
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1032,6 +1036,21 @@ void QCPColorMap::updateMapImage()
     {
       const int lineCount = valueSize;
       const int rowCount = keySize;
+    #ifdef QCPL_COLORMAP_CONCURRENT
+      if (_renderConcurrent)
+      {
+        QVector<int> lines(lineCount);
+        std::iota(lines.begin(), lines.end(), 0);
+        QtConcurrent::blockingMap(lines, [&](int line){
+          QRgb* pixels = reinterpret_cast<QRgb*>(localMapImage->scanLine(lineCount-1-line)); // invert scanline index because QImage counts scanlines from top, but our vertical index counts from bottom (mathematical coordinate system)
+          if (rawAlpha)
+            mGradient.colorize(rawData+line*rowCount, rawAlpha+line*rowCount, mDataRange, pixels, rowCount, 1, mDataScaleType==QCPAxis::stLogarithmic);
+          else
+            mGradient.colorize(rawData+line*rowCount, mDataRange, pixels, rowCount, 1, mDataScaleType==QCPAxis::stLogarithmic);
+        });
+      }
+      else
+    #endif
       for (int line=0; line<lineCount; ++line)
       {
         QRgb* pixels = reinterpret_cast<QRgb*>(localMapImage->scanLine(lineCount-1-line)); // invert scanline index because QImage counts scanlines from top, but our vertical index counts from bottom (mathematical coordinate system)
@@ -1044,6 +1063,21 @@ void QCPColorMap::updateMapImage()
     {
       const int lineCount = keySize;
       const int rowCount = valueSize;
+    #ifdef QCPL_COLORMAP_CONCURRENT
+      if (_renderConcurrent)
+      {
+        QVector<int> lines(lineCount);
+        std::iota(lines.begin(), lines.end(), 0);
+        QtConcurrent::blockingMap(lines, [&](int line){
+          QRgb* pixels = reinterpret_cast<QRgb*>(localMapImage->scanLine(lineCount-1-line)); // invert scanline index because QImage counts scanlines from top, but our vertical index counts from bottom (mathematical coordinate system)
+          if (rawAlpha)
+            mGradient.colorize(rawData+line, rawAlpha+line, mDataRange, pixels, rowCount, lineCount, mDataScaleType==QCPAxis::stLogarithmic);
+          else
+            mGradient.colorize(rawData+line, mDataRange, pixels, rowCount, lineCount, mDataScaleType==QCPAxis::stLogarithmic);
+        });
+      }
+      else
+    #endif
       for (int line=0; line<lineCount; ++line)
       {
         QRgb* pixels = reinterpret_cast<QRgb*>(localMapImage->scanLine(lineCount-1-line)); // invert scanline index because QImage counts scanlines from top, but our vertical index counts from bottom (mathematical coordinate system)
@@ -1066,16 +1100,38 @@ void QCPColorMap::updateMapImage()
   mMapImageInvalidated = false;
 }
 
+#ifdef QCPL_COLORMAP_PERFLOG_ID
+static void reportDrawTime(QCustomPlot *plot, int perflogId, qint64 nsecsElapsed)
+{
+    const double drawTime = nsecsElapsed*1e-6;
+    const double prevTime = plot->perflog.value(perflogId);
+    plot->perflog[perflogId] = !qFuzzyIsNull(prevTime)
+        ? prevTime*0.9 + drawTime*0.1 // exponential moving average with a time constant of 10 last replots
+        : drawTime; // no previous replots to average with, so initialize with replot time
+}
+#endif
+
 /* inherits documentation from base class */
 void QCPColorMap::draw(QCPPainter *painter)
 {
   if (mMapData->isEmpty()) return;
   if (!mKeyAxis || !mValueAxis) return;
+
+#ifdef QCPL_COLORMAP_PERFLOG_ID
+  QElapsedTimer drawTimer;
+  drawTimer.start();
+#endif
+
   applyDefaultAntialiasingHint(painter);
   
   if (mMapData->mDataModified || mMapImageInvalidated)
     updateMapImage();
   
+#ifdef QCPL_COLORMAP_PERFLOG_ID
+  auto tm1 = drawTimer.nsecsElapsed();
+  reportDrawTime(parentPlot(), QCPL_COLORMAP_PERFLOG_ID+1, tm1);
+#endif
+
   // use buffer if painting vectorized (PDF):
   const bool useBuffer = painter->modes().testFlag(QCPPainter::pmVectorized);
   QCPPainter *localPainter = painter; // will be redirected to paint on mapBuffer if painting vectorized
@@ -1111,8 +1167,8 @@ void QCPColorMap::draw(QCPPainter *painter)
       halfCellWidth = 0.5*imageRect.width()/double(mMapData->valueSize()-1);
   }
   imageRect.adjust(-halfCellWidth, -halfCellHeight, halfCellWidth, halfCellHeight);
-  const bool mirrorX = (keyAxis()->orientation() == Qt::Horizontal ? keyAxis() : valueAxis())->rangeReversed();
-  const bool mirrorY = (valueAxis()->orientation() == Qt::Vertical ? valueAxis() : keyAxis())->rangeReversed();
+  const bool mirrorX = !_ignoreAxisReverse && (keyAxis()->orientation() == Qt::Horizontal ? keyAxis() : valueAxis())->rangeReversed();
+  const bool mirrorY = !_ignoreAxisReverse && (valueAxis()->orientation() == Qt::Vertical ? valueAxis() : keyAxis())->rangeReversed();
   const bool smoothBackup = localPainter->renderHints().testFlag(QPainter::SmoothPixmapTransform);
   localPainter->setRenderHint(QPainter::SmoothPixmapTransform, mInterpolate);
   QRegion clipBackup;
@@ -1123,16 +1179,39 @@ void QCPColorMap::draw(QCPPainter *painter)
                                   coordsToPixels(mMapData->keyRange().upper, mMapData->valueRange().upper)).normalized();
     localPainter->setClipRect(tightClipRect, Qt::IntersectClip);
   }
-  localPainter->drawImage(imageRect, mMapImage.mirrored(mirrorX, mirrorY));
+
+#ifdef QCPL_COLORMAP_PERFLOG_ID
+  auto tm2_1 = drawTimer.nsecsElapsed();
+#endif
+
+  if (mirrorX || mirrorY)
+  {
+    Qt::Orientations orient;
+    orient.setFlag(Qt::Horizontal, mirrorX);
+    orient.setFlag(Qt::Vertical, mirrorY);
+    localPainter->drawImage(imageRect, mMapImage.flipped(orient));
+    //localPainter->drawImage(imageRect, mMapImage.mirrored(mirrorX, mirrorY));
+  }
+  else
+    localPainter->drawImage(imageRect, mMapImage);
   if (mTightBoundary)
     localPainter->setClipRegion(clipBackup);
   localPainter->setRenderHint(QPainter::SmoothPixmapTransform, smoothBackup);
-  
+
+#ifdef QCPL_COLORMAP_PERFLOG_ID
+  auto tm2_2 = drawTimer.nsecsElapsed();
+  reportDrawTime(parentPlot(), QCPL_COLORMAP_PERFLOG_ID+2, tm2_2 - tm2_1);
+#endif
+
   if (useBuffer) // localPainter painted to mapBuffer, so now draw buffer with original painter
   {
     delete localPainter;
     painter->drawPixmap(mapBufferTarget.toRect(), mapBuffer);
   }
+
+#ifdef QCPL_COLORMAP_PERFLOG_ID
+  reportDrawTime(parentPlot(), QCPL_COLORMAP_PERFLOG_ID, drawTimer.nsecsElapsed());
+#endif
 }
 
 /* inherits documentation from base class */

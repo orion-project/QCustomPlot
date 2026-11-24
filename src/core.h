@@ -199,6 +199,7 @@ public:
 
   bool skipDragging = false;
   bool skipRepaintOnResize = false;
+  QHash<int, double> perflog;
 
 signals:
   void mouseDoubleClick(QMouseEvent *event);
