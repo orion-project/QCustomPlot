@@ -1198,11 +1198,11 @@ void QCPColorMap::draw(QCPPainter *painter)
 
   if (mirrorX || mirrorY)
   {
-    Qt::Orientations orient;
-    orient.setFlag(Qt::Horizontal, mirrorX);
-    orient.setFlag(Qt::Vertical, mirrorY);
-    localPainter->drawImage(imageRect, mMapImage.flipped(orient));
-    //localPainter->drawImage(imageRect, mMapImage.mirrored(mirrorX, mirrorY));
+    // Qt::Orientations orient;
+    // orient.setFlag(Qt::Horizontal, mirrorX);
+    // orient.setFlag(Qt::Vertical, mirrorY);
+    // localPainter->drawImage(imageRect, mMapImage.flipped(orient));
+    localPainter->drawImage(imageRect, mMapImage.mirrored(mirrorX, mirrorY));
   }
   else
     localPainter->drawImage(imageRect, mMapImage);
